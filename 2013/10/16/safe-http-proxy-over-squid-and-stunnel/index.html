@@ -1,0 +1,389 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>使用squid与stunnel构建安全的http代理服务器 | Archean's Blog</title>
+  <meta name="author" content="Archean Zhang">
+  
+  <meta name="description" content="Knowing and Doing.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <meta property="og:title" content="使用squid与stunnel构建安全的http代理服务器"/>
+  <meta property="og:site_name" content="Archean's Blog"/>
+
+  <link rel="alternate" href="/atom.xml" title="Archean's Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <link rel="icon" type="image" href="/favicon.png">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+  
+</head>
+
+
+<body>
+  <div class="wrapper">
+    <header id="header"><div class="title">
+  <h1><a href="/" class="titlea">Archean's Blog</a></h1>
+  <p><a href="/" class="titlea">Knowing and Doing.</a></p>
+</div>
+
+
+<div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search"speech="”speech”" x-webkit-speech="”x-webkit-speech”" x-webkit-grammar="”builtin:translate”">
+    <input type="hidden" name="q" value="site:blog.archean.me">
+  </form>
+</div>
+
+<nav class="nav">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/about">About</a></li>
+    
+      <li><a href="/atom.xml">Rss</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+<a href="" class="title"></a></header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <time datetime="2013-10-16T13:26:07.000Z"><a href="/2013/10/16/safe-http-proxy-over-squid-and-stunnel/">Oct 16 2013</a></time>
+    
+    
+  
+    <h1 class="title">使用squid与stunnel构建安全的http代理服务器</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <p><img src="http://www.squid-cache.org/Images/img4.jpg" alt="Squid" title="Squid"><br>使用 Squid 在服务器端打开一个代理端口, 同时用服务器上的 Stunnel 进行转发, 与客户端的 Stunnel 通过 SSL 链接, 达到代理的目的.</p>
+<p>也可以使用客户端的 Stunnel 与 Squid 通过 SSL 直接相连.</p>
+<p>本方法使用前者.<br><a id="more"></a></p>
+<h1>1. 服务器端配置</h1>
+<p>服务器环境:</p>
+<pre><code><span class="preprocessor"># lsb_release -a</span>
+LSB Version:    :core-<span class="number">4.0</span>-ia32:core-<span class="number">4.0</span>-noarch:graphics-<span class="number">4.0</span>-ia32:graphics-<span class="number">4.0</span>-noarch:printing-<span class="number">4.0</span>-    ia32:printing-<span class="number">4.0</span>-noarch
+Distributor ID:    CentOS
+<span class="label">Description:</span>    CentOS Linux release <span class="number">6.0</span> (Final)
+<span class="label">Release:</span>    <span class="number">6.0</span>
+<span class="label">Codename:</span>    Final    
+<span class="preprocessor"># uname -a</span>
+Linux jb1<span class="preprocessor">.archean</span><span class="preprocessor">.me</span> <span class="number">2.6</span><span class="number">.32</span>-<span class="number">71.</span>el6<span class="preprocessor">.i</span>686 <span class="preprocessor">#1 SMP Fri Nov 12 04:17:17 GMT 2010 i686 i686 i386 GNU/Linux</span></code></pre>
+<h2>1.1 安装 Squid</h2>
+<p>下载 squid 3.2.8</p>
+<pre><code>wget http://www<span class="preprocessor">.squid</span>-cache<span class="preprocessor">.org</span>/Versions/v3/<span class="number">3.2</span>/squid-<span class="number">3.2</span><span class="number">.8</span><span class="preprocessor">.tar</span><span class="preprocessor">.gz</span></code></pre>
+<p>可以使用 CentOS 的 Yum 安装工具, 不过我更喜欢编译安装 (提前准备好编译环境, Gcc, openssl 等):</p>
+<pre><code><span class="title">tar</span> zxvf squid-<span class="number">3.2</span><span class="number">.8</span>.tar.gz
+<span class="title">cd</span> squid-<span class="number">3.2</span><span class="number">.8</span>
+./configure <span class="comment">--prefix=/usr/local</span>
+<span class="title">make</span>
+<span class="title">make</span> install</code></pre>
+<h2>1.2 配置 Squid</h2>
+<p>这个拓扑结构只需要 Squid 做简单的 http 代理, 所以无需 SSL.</p>
+<p>squid 的配置文件在<code>/usr/local/etc/squid.conf</code></p>
+<p>备份之后, 将其按下面修改, 为防止被别的机器滥用, 只监听 127.0.0.1:</p>
+<pre><code>###/usr/local/etc/squid.conf
+###<span class="number">2013</span>-<span class="number">1</span>-<span class="number">27</span> <span class="number">19</span>:<span class="number">56</span> v0<span class="number">.0</span><span class="number">.1</span> for squid <span class="number">3.2</span><span class="number">.6</span>
+#<span class="type">Xu</span> <span class="type">Zhang</span> &lt;zephyr422@gmail.com&gt;
+
+<span class="title">visible_hostname</span> <span class="type">Archean</span>.me
+<span class="title">cache_mgr</span> zephyr422@gmail.com
+<span class="title">http_port</span> <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">3177</span>
+<span class="title">icp_port</span> <span class="number">0</span>
+<span class="title">cache_mem</span> <span class="number">256</span> <span class="type">MB</span>
+<span class="title">dns_nameservers</span> <span class="number">8.8</span><span class="number">.8</span><span class="number">.8</span> <span class="number">8.8</span><span class="number">.4</span><span class="number">.4</span>
+
+<span class="title">coredump_dir</span> /usr/local/var/cache/squid
+<span class="title">access_log</span> /usr/local/var/logs/squid_access.log
+<span class="title">cache_log</span> /usr/local/var/logs/squid_cache.log
+
+<span class="title">acl</span> localnet src <span class="number">10.0</span><span class="number">.0</span><span class="number">.0</span>/<span class="number">8</span>    # <span class="type">RFC1918</span> possible internal network
+<span class="title">acl</span> localnet src <span class="number">172.16</span><span class="number">.0</span><span class="number">.0</span>/<span class="number">12</span>    # <span class="type">RFC1918</span> possible internal network
+<span class="title">acl</span> localnet src <span class="number">192.168</span><span class="number">.0</span><span class="number">.0</span>/<span class="number">16</span>    # <span class="type">RFC1918</span> possible internal network
+<span class="title">acl</span> localnet src fc00::/<span class="number">7</span>       # <span class="type">RFC</span> <span class="number">4193</span> local private network range
+<span class="title">acl</span> localnet src fe80::/<span class="number">10</span>      # <span class="type">RFC</span> <span class="number">4291</span> link-local (directly plugged) machines
+<span class="title">acl</span> <span class="type">SSL_ports</span> port <span class="number">443</span>
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">80</span>        # http
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">21</span>        # ftp
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">443</span>        # https
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">70</span>        # gopher
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">210</span>        # wais
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">1025</span>-<span class="number">65535</span>    # unregistered ports
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">280</span>        # http-mgmt
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">488</span>        # gss-http
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">591</span>        # filemaker
+<span class="title">acl</span> <span class="type">Safe_ports</span> port <span class="number">777</span>        # multiling http
+<span class="title">acl</span> <span class="type">CONNECT</span> method <span class="type">CONNECT</span>
+
+<span class="title">http_access</span> deny !<span class="type">Safe_ports</span>
+<span class="title">http_access</span> deny <span class="type">CONNECT</span> !<span class="type">SSL_ports</span>
+<span class="title">http_access</span> allow localnet
+<span class="title">http_access</span> allow localhost
+
+<span class="title">http_access</span> deny all</code></pre>
+<p>检查配置有没有问题:</p>
+<pre><code><span class="title">squid</span> -k check</code></pre>
+<p>或者</p>
+<pre><code><span class="title">squid</span> -k parse    </code></pre>
+<p>初始化 cache 目录</p>
+<pre><code><span class="title">squid</span> -z</code></pre>
+<p>一旦你已经初始化 cache 目录，就可以在终端窗口里运行 squid，将日志记录到标准错误。这样，就能轻易的定位任何错误或问题，并且确认 squid 是否成功启动。使用 -N 选项来保持 squid 在前台运行，-d1 选项在标准错误里显示 1 级别的调试信息。</p>
+<pre><code><span class="comment">#</span> <span class="comment">squid</span> <span class="literal">-</span><span class="comment">N</span> <span class="literal">-</span><span class="comment">d1</code></pre>
+<p>启动 squid:</p>
+<pre><code><span class="attribute">squid</code></pre>
+<p>检查是否启动成功, <code>ps -ef | grep squid</code> 或 <code>lsof -i:3177</code></p>
+<p>模拟测试客户端连接:<br>    squidclient -p 3177 <a href="http://www.squid-cache.org/" target="_blank">http://www.squid-cache.org/</a></p>
+<p>如期返回了 html 信息, 说明 Squid 已成功启动.</p>
+<h2>1.3 安装 Stunnel</h2>
+<p>下载稳定版 Stunnel</p>
+<pre><code>wget https://www<span class="preprocessor">.stunnel</span><span class="preprocessor">.org</span>/downloads/stunnel-<span class="number">4.56</span><span class="preprocessor">.tar</span><span class="preprocessor">.gz</span></code></pre>
+<p>创建 Stunnel 用户:</p>
+<pre><code><span class="comment">/usr/sbin/groupadd</span> <span class="literal">-</span><span class="comment">g</span> <span class="comment">122</span> <span class="comment">stunnel</span>
+<span class="comment">/usr/sbin/useradd</span> <span class="literal">-</span><span class="comment">c</span> <span class="comment">stunnel</span> <span class="literal">-</span><span class="comment">d</span> <span class="comment">/nonexistent</span> <span class="literal">-</span><span class="comment">m</span> <span class="literal">-</span><span class="comment">g</span> <span class="comment">122</span> <span class="literal">-</span><span class="comment">u</span> <span class="comment">122</span> <span class="comment">stunnel</code></pre>
+<p>安装:<br>    tar zxvf stunnel-4.56.tar.gz<br>    cd stunnel-4.56<br>    ./configure —prefix=/usr/local<br>    make<br>    makeinstall</p>
+<p>安装过程通常会创建自签名证书, 会放到<code>/usr/local/etc/stunnel/stunnel.pem</code>可以直接使用 (有效期一年). 使用下面的命令检查证书详细内容:</p>
+<pre><code><span class="comment">openssl</span> <span class="comment">x509</span> <span class="literal">-</span><span class="comment">subject</span> <span class="literal">-</span><span class="comment">dates</span> <span class="literal">-</span><span class="comment">fingerprint</span> <span class="literal">-</span><span class="comment">in</span> <span class="comment">stunnel</span>.<span class="comment">pem</span> 
+<span class="comment">subject=</span> <span class="comment">/C=CN/ST=Beijing/L=Beijing/O=Archean</span> <span class="comment">Inc/OU=Archean</span> <span class="comment">Inc/CN=archean</span>.<span class="comment">me</span>
+<span class="comment">notBefore=Apr</span> <span class="comment">20</span> <span class="comment">02:05:24</span> <span class="comment">2013</span> <span class="comment">GMT</span>
+<span class="comment">notAfter=Apr</span> <span class="comment">20</span> <span class="comment">02:05:24</span> <span class="comment">2014</span> <span class="comment">GMT</span>
+<span class="comment">SHA1</span> <span class="comment">Fingerprint=87:F8:6E:05:B8:9C:BC:A1:EA:15:B7:C9:B4:B2:75:FF:8A:CA:C5:FA</span>
+<span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="comment">BEGIN</span> <span class="comment">CERTIFICATE</span>-<span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span>
+<span class="comment">xxx</span>
+<span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="comment">END</span> <span class="comment">CERTIFICATE</span>-<span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span></code></pre>
+<p>给证书生成 Diffie-Hellman 部分</p>
+<pre><code><span class="title">openssl</span> gendh <span class="number">512</span>&gt;&gt; stunnel.pem </code></pre>
+<p>这在 4.x 版本的 stunnel 上好像是必须的.</p>
+<p>如果想要自己生成证书, 命令如下:</p>
+<pre><code><span class="comment">openssl</span> <span class="comment">req</span> <span class="literal">-</span><span class="comment">new</span> <span class="literal">-</span><span class="comment">x509</span> <span class="literal">-</span><span class="comment">days</span> <span class="comment">365</span> <span class="literal">-</span><span class="comment">nodes</span> <span class="literal">-</span><span class="comment">config</span> <span class="comment">openssl</span>.<span class="comment">cnf</span> <span class="literal">-</span><span class="comment">out</span> <span class="comment">stunnel</span>.<span class="comment">pem</span> <span class="literal">-</span><span class="comment">keyout</span> <span class="comment">stunnel</span>.<span class="comment">pem</span> </code></pre>
+<h2>1.4 配置 Stunnel</h2>
+<p>在<code>/usr/local/etc/stunnel/</code>下创建 stunnel.conf, 写入如下配置:</p>
+<pre><code><span class="setting">cert = <span class="value">/usr/local/etc/stunnel/stunnel.pem</span></span>
+<span class="setting">CAfile = <span class="value">/usr/local/etc/stunnel/stunnel.pem</span></span>
+<span class="setting">socket = <span class="value">l:TCP_NODELAY=<span class="number">1</span></span></span>
+<span class="setting">socket = <span class="value">r:TCP_NODELAY=<span class="number">1</span></span></span>
+
+<span class="comment">;;;chroot = /var/run/stunnel</span>
+<span class="setting">pid = <span class="value">/tmp/stunnel.pid</span></span>
+<span class="setting">verify = <span class="value"><span class="number">3</span></span></span>
+
+<span class="comment">;;; CApath = certs</span>
+<span class="comment">;;; CRLpath = crls</span>
+<span class="comment">;;; CRLfile = crls.pem</span>
+
+<span class="setting">setuid = <span class="value">stunnel</span></span>
+<span class="setting">setgid = <span class="value">stunnel</span></span>
+
+<span class="comment">;;; client=yes</span>
+<span class="setting">compression = <span class="value">zlib</span></span>
+<span class="comment">;;; taskbar = no</span>
+<span class="setting">delay = <span class="value"><span class="keyword">no</span></span></span>
+<span class="comment">;;; failover = rr</span>
+<span class="comment">;;; failover = prio</span>
+<span class="setting">sslVersion = <span class="value">TLSv1</span></span>
+<span class="setting">fips=<span class="value"><span class="keyword">no</span></span></span>
+
+<span class="setting">debug = <span class="value"><span class="number">7</span></span></span>
+<span class="setting">syslog = <span class="value"><span class="keyword">no</span></span></span>
+<span class="setting">output = <span class="value">stunnel.log</span></span>
+
+<span class="title">[sproxy]</span>
+<span class="setting">accept = <span class="value"><span class="number">34567</span></span></span>
+<span class="setting">connect = <span class="value"><span class="number">127.0</span>.<span class="number">0.1</span>:<span class="number">3177</span></span></span></code></pre>
+<p>此时便可启动 stunnel:</p>
+<pre><code><span class="attribute">stunnel</code></pre>
+<p>检查是否运行:</p>
+<pre><code><span class="comment">ps</span> <span class="literal">-</span><span class="comment">ef</span> <span class="comment">|</span> <span class="comment">grep</span> <span class="comment">stunnel</span>
+<span class="comment">lsof</span> <span class="literal">-</span><span class="comment">i:34567</code></pre>
+<h2>1.5 将 Squid 和 Stunnel 加入开机启动项</h2>
+<p>略</p>
+<h1>2. 客户端配置</h1>
+<h2>2.1 linux 客户端使用 stunnel 与服务器进行安全连接</h2>
+<p>安装 Stunnel</p>
+<p>与服务器完全相同, 略.</p>
+<h2>2.2 配置客户端 Stunnel</h2>
+<p>将服务器生成的证书传到客户端中:</p>
+<pre><code><span class="title">cd</span> /usr/local/etc/stunnel
+scp root<span class="variable">@jb1</span>.archean.<span class="url">me:/usr/local/etc/stunnel/stunnel.pem</span> ./</code></pre>
+<p>创建配置文件</p>
+<pre><code><span class="title">vim</span> stunnel.conf</code></pre>
+<p>内容如下:</p>
+<pre><code><span class="setting">id = <span class="value">/tmp/stunnel.pid</span></span>
+<span class="setting">cert = <span class="value">/usr/local/etc/stunnel/stunnel.pem</span></span>
+<span class="setting">socket = <span class="value">l:TCP_NODELAY=<span class="number">1</span></span></span>
+<span class="setting">socket = <span class="value">r:TCP_NODELAY=<span class="number">1</span></span></span>
+<span class="setting">verify = <span class="value"><span class="number">2</span></span></span>
+<span class="setting">CAfile = <span class="value">/usr/local/etc/stunnel/stunnel.pem</span></span>
+<span class="setting">client=<span class="value"><span class="keyword">yes</span></span></span>
+<span class="setting">compression = <span class="value">zlib</span></span>
+<span class="setting">ciphers = <span class="value">AES256-SHA</span></span>
+<span class="setting">delay = <span class="value"><span class="keyword">no</span></span></span>
+<span class="setting">failover = <span class="value">prio</span></span>
+<span class="setting">sslVersion = <span class="value">TLSv1</span></span>
+<span class="setting">fips = <span class="value"><span class="keyword">no</span></span></span>
+<span class="title">[sproxy]</span>
+<span class="setting">accept  = <span class="value"><span class="number">0.0</span>.<span class="number">0.0</span>:<span class="number">7071</span></span></span>
+<span class="setting">connect = <span class="value">jb1.archean.me:<span class="number">34567</span></span></span></code></pre>
+<p>其中 accept 是本地代理监听地址, 如不对外提供服务则改为<code>accept = 127.0.0.1:7071</code></p>
+<p>启动 stunnel:</p>
+<pre><code>/usr/<span class="keyword">local</span>/bin/stunnel</code></pre>
+<p>至此, 配置完全结束, 可以通过使用<code>Client.IP.Address:7071</code>代理上网</p>
+<h2>2.3 结语</h2>
+<p>参考资料:</p>
+<p><a href="http://home.arcor.de/pangj/squid/index.html" target="_blank">Squid 权威指南</a></p>
+
+    
+  </div>
+  <footer>
+    
+      
+  
+  <div class="categories">
+    <a href="/categories/web/">web</a>
+  </div>
+
+      
+  
+  <div class="tags">
+    <a href="/tags/Squid/">Squid</a>, <a href="/tags/Stunnel/">Stunnel</a>, <a href="/tags/Http proxy/">Http proxy</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+<section id="comment">
+  <!-- <h1 class="title">Comments</h1> -->
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</div>
+  </div>
+  <div class="widget-wrapper">
+    <aside id="sidebar">
+  
+  
+    
+      
+      
+
+<div class="widget twitter first">
+  <h3 class="title">
+                <a href="http://twitter.com/iarchean">@iarchean</a>'s Tweets
+        </h3>
+  <ul id="tweets"></ul>
+</div>
+
+<script type="text/javascript">
+var twitter_stream = ['iarchean', 3, true];
+var moment_js_path = '/js/moment.min.js';
+</script>
+<script src="/js/twitter.js"></script>
+
+    
+      
+      
+
+<div class="widget recent-posts">
+  <h3 class="title">Recent Posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2013/10/24/OS-X-Mavericks-The-Review/"># Os X Mavericks: the Review</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/22/the-great-gatsby/"># the Great Gatsby</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/22/install-mcrypt-php-extension-on-ubuntu-server/"># Ubuntu Server 下安装 Mcrypt Php Extension</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/21/make-dropbox-public-folder-a-stable-pic-server/"># 用 Dropbox Public Folder 做博客的超稳定图床</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/20/fulfil-with-hexo-theme/"># 搞定 Hexo</a>
+      </li>
+    
+  </ul>
+</div>
+
+    
+      
+      
+
+<div class="widget flickr">
+  <h3 class="title">My Flickr</h3>
+  	<div class="entry">
+				<div class="flickrlist">
+				<script type="text/javascript" src="http://www.flickr.com/badge_code_v2.gne?count=9&display=random&size=s&source=user_set&set=72157636676756714&user=68613860@N04"></script>
+				</div>
+		</div>
+</div>
+
+    
+  
+</aside>
+<div class="clearfix"></div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2013 <a href="/">Archean Zhang</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+   | 
+  Redesign by <a href="http://blog.archean.me/" target="_blank">Archean Zhang</a>
+</div>
+<div class="clearfix"></div>
+
+</footer>
+  <script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+  var disqus_shortname = 'archean';
+
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  }());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

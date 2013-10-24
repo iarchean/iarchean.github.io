@@ -1,0 +1,484 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>使用一台raspberry Pi作为家庭网关, 无障碍翻墙 | Archean's Blog</title>
+  <meta name="author" content="Archean Zhang">
+  
+  <meta name="description" content="Knowing and Doing.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <meta property="og:title" content="使用一台raspberry Pi作为家庭网关, 无障碍翻墙"/>
+  <meta property="og:site_name" content="Archean's Blog"/>
+
+  <link rel="alternate" href="/atom.xml" title="Archean's Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <link rel="icon" type="image" href="/favicon.png">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+  
+</head>
+
+
+<body>
+  <div class="wrapper">
+    <header id="header"><div class="title">
+  <h1><a href="/" class="titlea">Archean's Blog</a></h1>
+  <p><a href="/" class="titlea">Knowing and Doing.</a></p>
+</div>
+
+
+<div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search"speech="”speech”" x-webkit-speech="”x-webkit-speech”" x-webkit-grammar="”builtin:translate”">
+    <input type="hidden" name="q" value="site:blog.archean.me">
+  </form>
+</div>
+
+<nav class="nav">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/about">About</a></li>
+    
+      <li><a href="/atom.xml">Rss</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+<a href="" class="title"></a></header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <time datetime="2013-10-16T13:57:37.000Z"><a href="/2013/10/16/breaking-gfw-with-raspberry-pi/">Oct 16 2013</a></time>
+    
+    
+  
+    <h1 class="title">使用一台raspberry Pi作为家庭网关, 无障碍翻墙</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <blockquote>
+<p>Arthor:    Archean Zhang</p>
+<p>Email:    zephyr422@gmail.com</p>
+<p>Version:    1.0.1</p>
+<p>Date:        2013/8/16</p>
+</blockquote>
+<p>长期被 GFW 困扰, 我终于忍不住动手了: 把家里的 Raspberry Pi 和与自由世界的主机建立 OpenVPN over Stunnel 的链路, 根据大中华 3000 条路由来匹配, 国外网站自动走 OpenVPN 出去以实现翻墙.</p>
+<p>以下文章是基于一台 Linux 服务器 (CentOS 6.4) 撰写的, 将下面<code>Router</code>的换成 Raspberry Pi 也一样.<br><a id="more"></a></p>
+<h2><code>1</code>.    准备</h2>
+<p>硬件:</p>
+<ul>
+<li>1 台位于自由世界的 Linux 服务器 (Server)</li>
+<li>1 台位于本地的 Linux 服务器 (Router)</li>
+<li>客户端 (Client)</li>
+</ul>
+<p>软件:</p>
+<ul>
+<li>Stunnel</li>
+<li>OpenVPN</li>
+<li>DNSMasq</li>
+</ul>
+<p>拓扑图:<br><img src="http://archean.me/img/OpenVPN.png" alt="Topology"></p>
+<h2><code>2</code>.    Server 端配置</h2>
+<p>安装好 Linux 系统后 (Red hat 或 CentOS), 同步服务器时间 (非常重要):</p>
+<pre><code><span class="preprocessor"># ntpdate time.nist.gov</span></code></pre>
+<h3><code>2.1</code>    OpenVPN</h3>
+<p>下载安装 OpenVPN, 生成服务器端证书, OpenVPN 依赖 lzo, 需要一同安装:</p>
+<pre><code><span class="preprocessor"># yum install lzo openvpn</span></code></pre>
+<p>服务器端配置文件<code>/etc/openvpn/server.conf</code>, 范例及说明如下:</p>
+<pre><code><span class="title">local</span> <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>     # 监听本地接口
+<span class="title">port</span> <span class="number">4443</span>             # 监听端口
+<span class="title">proto</span> tcp             # 协议
+<span class="title">dev</span> tap                
+<span class="title">ca</span> /etc/openvpn/keys/ca.crt            # 证书
+<span class="title">cert</span> /etc/openvpn/keys/server.crt    # 证书
+<span class="title">dh</span> /etc/openvpn/keys/dh1024.pem        # 证书
+<span class="title">server</span> <span class="number">172.31</span><span class="number">.189</span><span class="number">.0</span> <span class="number">255.255</span><span class="number">.255</span><span class="number">.0</span>    # 网段
+<span class="title">client</span>-to-client
+<span class="title">duplicate</span>-cn
+<span class="title">keepalive</span> <span class="number">10</span> <span class="number">120</span>
+<span class="title">comp</span>-lzo
+<span class="title">persist</span>-key
+<span class="title">persist</span>-tun
+<span class="title">status</span> openvpn-status.log        # 状态日志
+<span class="title">log</span>-append  openvpn.log            # 执行日志
+<span class="title">verb</span> <span class="number">3</span></code></pre>
+<p>启动 openvpn:</p>
+<pre><code><span class="comment">#</span> <span class="comment">openvpn</span> <span class="literal">-</span><span class="literal">-</span><span class="comment">config</span> <span class="comment">/etc/openvpn/server</span>.<span class="comment">conf</span> <span class="literal">-</span><span class="literal">-</span><span class="comment">deamon</code></pre>
+<p>观察日志, 如果出现<code>“Initialization Sequence Completed”</code>则代表启动成功.</p>
+<h3><code>2.2</code>    Stunnel</h3>
+<p>Openvpn 的 Server 端只监控本地接口, 就是为了用 Stunnel 将流量加密, 在 Local 端安全的链接, 达到加密, 混淆流量的作用, 以绕开 GFW 的监控.</p>
+<p>下载安装 stunnel</p>
+<pre><code><span class="preprocessor"># yum install stunnel</span></code></pre>
+<p>安装过程中会生成服务器证书<code>stunnel.pem</code>, 按照提示来即可.</p>
+<p>编辑配置文件<code>/usr/bin/etc/stunnel.conf</code>, 如下所示:<br>    cert = /usr/local/etc/stunnel/stunnel.pem<br>    CAfile = /usr/local/etc/stunnel/stunnel.pem<br>    socket = l:TCP_NODELAY=1<br>    socket = r:TCP_NODELAY=1</p>
+<pre><code><span class="setting">pid = <span class="value">/tmp/stunnel.pid</span></span>
+<span class="setting">verify = <span class="value"><span class="number">3</span></span></span>
+
+<span class="setting">setuid = <span class="value">stunnel</span></span>
+<span class="setting">setgid = <span class="value">stunnel</span></span>
+
+<span class="setting">compression = <span class="value">zlib</span></span>
+<span class="setting">delay = <span class="value"><span class="keyword">no</span></span></span>
+<span class="setting">sslVersion = <span class="value">TLSv1</span></span>
+<span class="setting">fips=<span class="value"><span class="keyword">no</span></span></span>
+
+<span class="setting">debug = <span class="value"><span class="number">7</span></span></span>
+<span class="setting">syslog = <span class="value"><span class="keyword">no</span></span></span>
+<span class="setting">output = <span class="value">/usr/local/etc/stunnel/stunnel.log</span></span>
+
+<span class="title">[s-openvpn]</span>    
+<span class="setting">accept = <span class="value"><span class="number">13579</span>                # 监听端口</span></span>
+<span class="setting">connect = <span class="value"><span class="number">127.0</span>.<span class="number">0.1</span>:<span class="number">4443</span>    #OpenVPN 端口</span></span></code></pre>
+<p>启动 stunnel:</p>
+<pre><code><span class="preprocessor"># stunnel</span></code></pre>
+<p>查看 OpenVPN 和 Stunnel 是否正确执行, 检查相应端口:</p>
+<pre><code><span class="comment"># netstat -ntwla</span>
+<span class="title">Active</span> Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address               Foreign Address             State      
+tcp        <span class="number">0</span>      <span class="number">0</span> <span class="number">0.0.0.0:13579</span>               <span class="number">0.0.0.0</span>:*                   LISTEN    
+tcp        <span class="number">0</span>      <span class="number">0</span> <span class="number">127.0.0.1:4443</span>              <span class="number">127.0.0.1:50223</span>             ESTABLISHED 
+<span class="comment"># lsof -i:4443 -n</span>
+COMMAND   PID    USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME
+openvpn <span class="number">25290</span>    root    5u  IPv4 <span class="number">2982393</span>      0t0  TCP *:pharos (LISTEN)
+openvpn <span class="number">25290</span>    root    8u  IPv4 <span class="number">3361561</span>      0t0  TCP <span class="number">127.0.0.1</span>:pharos-&gt;<span class="number">127.0.0.1:50223</span> (ESTABLISHED)
+stunnel <span class="number">26801</span> stunnel   10u  IPv4 <span class="number">3361560</span>      0t0  TCP <span class="number">127.0.0.1:50223</span>-&gt;<span class="number">127.0.0.1</span>:pharos (ESTABLISHED)</code></pre>
+<p><strong>看到端口均已正确监听, 至此 Server 端配置完成</strong></p>
+<h2><code>3</code>.    Router 配置</h2>
+<p>安装好 Linux 系统后 (Red hat 或 CentOS), 同步服务器时间 (非常重要):</p>
+<pre><code><span class="preprocessor"># ntpdate time.nist.gov</span></code></pre>
+<h3><code>3.1</code>    安装 Stunnel</h3>
+<p>Router 端需要首先安装 Stunnel, 在本地开启加密链路, 透传 OpenVPN 加密端口 4443, 然后 OpenVPN 才能开始接入:</p>
+<pre><code><span class="preprocessor"># yum install stunnel</span></code></pre>
+<p>将 Server 端 Stunnel 证书传过来, 以便验证:</p>
+<pre><code><span class="comment"># scp root<span class="yardoctag">@server</span>:/usr/local/etc/stunnel.pem root<span class="yardoctag">@router</span>:/usr/local/etc/stunnel.pem</span></code></pre>
+<p>开始进行 stunnel 配置, 配置文件<code>/usr/local/etc/stunnel.conf</code>:</p>
+<pre><code><span class="setting">pid = <span class="value">/tmp/stunnel.pid</span></span>
+<span class="setting">cert = <span class="value">/usr/local/etc/stunnel/stunnel.pem</span></span>
+<span class="setting">socket = <span class="value">l:TCP_NODELAY=<span class="number">1</span></span></span>
+<span class="setting">socket = <span class="value">r:TCP_NODELAY=<span class="number">1</span></span></span>
+<span class="setting">verify = <span class="value"><span class="number">3</span></span></span>
+<span class="setting">CAfile = <span class="value">/usr/local/etc/stunnel/stunnel.pem</span></span>
+<span class="setting">client=<span class="value"><span class="keyword">yes</span></span></span>
+<span class="setting">compression = <span class="value">zlib</span></span>
+<span class="setting">ciphers = <span class="value">AES256-SHA</span></span>
+<span class="setting">delay = <span class="value"><span class="keyword">no</span></span></span>
+<span class="setting">failover = <span class="value">prio</span></span>
+<span class="setting">sslVersion = <span class="value">TLSv1</span></span>
+
+<span class="setting">output = <span class="value">/root/bin/logs/stunnel.log</span></span>
+<span class="title">[s-openvpn]</span>
+<span class="setting">accept = <span class="value"><span class="number">127.0</span>.<span class="number">0.1</span>:<span class="number">4443</span></span></span>
+<span class="setting">connect = <span class="value">server.ip.address:<span class="number">13579</span></span></span></code></pre>
+<p>启动 stunnel:</p>
+<pre><code><span class="preprocessor"># stunnel</span></code></pre>
+<h3><code>3.2</code>    安装 OpenVPN</h3>
+<p>下载安装 OpenVPN, OpenVPN 依赖 lzo, 需要一同安装:</p>
+<pre><code><span class="preprocessor"># yum install lzo openvpn</span></code></pre>
+<p>配置 Router 端配置文件<code>/etc/openvpn/hk.ovpn</code>:<br>    dev tap                # 设备模式<br>    port 65530            # 本地监听端口<br>    proto tcp            # 协议<br>    client                # 服务模式:client<br>    tls-client            # 加密客户端<br>    ns-cert-type server<br>    remote 127.0.0.1 4443                #Server 端口, 由于使用 Stunnel 加密透传, 所以连接本地端口<br>    ca /etc/openvpn/ca/ca.crt            # 证书<br>    key /etc/openvpn/ca/client1.key        # 证书<br>    cert /etc/openvpn/ca/client1.crt    # 证书<br>    persist-key<br>    persist-tun</p>
+<pre><code><span class="preprocessor">#route-method exe</span>
+<span class="preprocessor">#route-delay 2</span>
+<span class="built_in">comp</span>-lzo
+status /etc/openvpn/openvpn-status.<span class="built_in">log</span>        <span class="preprocessor"># 状态日志</span>
+<span class="built_in">log</span>-append  /etc/openvpn/ca.<span class="built_in">log</span>                <span class="preprocessor"># 执行日志</span>
+verb <span class="number">3</span></code></pre>
+<p>启动 OpenVPN:</p>
+<pre><code><span class="comment">#</span> <span class="comment">openvpn</span> <span class="literal">-</span><span class="literal">-</span><span class="comment">daemon</span> <span class="literal">-</span><span class="literal">-</span><span class="comment">config</span> <span class="comment">/etc/openvpn/hk</span>.<span class="comment">ovpn</code></pre>
+<p>观察日志, 如果出现<code>“Initialization Sequence Completed”</code>则代表启动成功.</p>
+<p>检查隧道:</p>
+<pre><code># ip addr
+<span class="number">11</span>: <span class="method">tap0:</span> &lt;<span class="class">BROADCAST</span>,<span class="class">MULTICAST</span>,<span class="class">UP</span>,<span class="class">LOWER_UP</span>&gt; mtu <span class="number">1500</span> qdisc pfifo_fast state <span class="class">UNKNOWN</span> qlen <span class="number">100</span>
+    link/ether <span class="number">06</span>:<span class="number">10</span>:<span class="number">50</span>:<span class="method">e5:</span><span class="method">e5:</span><span class="number">2</span>c brd <span class="method">ff:</span><span class="method">ff:</span><span class="method">ff:</span><span class="method">ff:</span><span class="method">ff:</span>ff
+    inet <span class="number">172.31</span><span class="number">.188</span><span class="number">.2</span>/<span class="number">24</span> brd <span class="number">172.31</span><span class="number">.188</span><span class="number">.255</span> scope global tap0
+    inet6 <span class="method">fe80:</span>:<span class="number">410</span>:<span class="number">50</span><span class="method">ff:</span><span class="method">fee5:</span>e52c/<span class="number">64</span> scope link 
+       valid_lft forever preferred_lft forever
+
+# ping <span class="number">172.31</span><span class="number">.188</span><span class="number">.1</span>
+<span class="class">PING</span> <span class="number">172.31</span><span class="number">.188</span><span class="number">.1</span> (<span class="number">172.31</span><span class="number">.188</span><span class="number">.1</span>) <span class="number">56</span>(<span class="number">84</span>) bytes of data.
+<span class="number">64</span> bytes from <span class="number">172.31</span><span class="number">.188</span><span class="number">.1</span>: icmp_seq=<span class="number">1</span> ttl=<span class="number">64</span> time=<span class="number">67.3</span> ms
+<span class="number">64</span> bytes from <span class="number">172.31</span><span class="number">.188</span><span class="number">.1</span>: icmp_seq=<span class="number">2</span> ttl=<span class="number">64</span> time=<span class="number">67.1</span> ms
+^<span class="class">C</span>
+--- <span class="number">172.31</span><span class="number">.188</span><span class="number">.1</span> ping statistics ---
+<span class="number">2</span> packets transmitted, <span class="number">2</span> received, <span class="number">0</span>% packet loss, time <span class="number">1588</span>ms
+rtt min/avg/max/mdev = <span class="number">67.183</span>/<span class="number">67.284</span>/<span class="number">67.386</span>/<span class="number">0.278</span> ms</code></pre>
+<p>链路通畅</p>
+<h3><code>3.3</code>    安装 DNSmasq</h3>
+<p>Router 若要进行翻墙, 需要使用国外 DNS, 而浏览国内网站时, 如果使用国外 DNS, 会造成将访问导向国外站点, 造成访问速度变慢, 所以此方案使用 DNSmasq 解决此问题.</p>
+<p>同时 DNSmasq 也是一个轻量级 DHCP 服务器, 非常方便好用.</p>
+<p>安装 DNSmasq:</p>
+<pre><code><span class="preprocessor"># yum install dnsmasq</span></code></pre>
+<p>编辑 DNSmasq 配置文件<code>/etc/dnsmasq.conf</code>, 假设 Router 本地 IP 是 10.2.166.10, 本地分发网段是 10.2.166.0/24, 则配置如下:</p>
+<pre><code><span class="comment"># DHCP config</span>
+expand-hosts
+domain=localdomain.com
+<span class="comment"># DHCP Range</span>
+dhcp-range=<span class="number">10.2</span>.<span class="number">166.50</span>,<span class="number">10.2</span>.<span class="number">166.150</span>,<span class="number">12</span>h    <span class="comment">#DHCP 地址池</span>
+<span class="comment"># DHCP route</span>
+dhcp-option=<span class="number">3</span>,<span class="number">10.2</span>.<span class="number">166.10</span>                    <span class="comment"># 路由</span>
+dhcp-option=<span class="symbol">option:</span>ntp-server,<span class="number">10.3</span>.<span class="number">1.233</span>    <span class="comment">#ntp 时间服务器</span>
+
+<span class="comment"># DNS server</span>
+no-resolv
+no-poll
+server=<span class="number">8.8</span>.<span class="number">8.8</span>
+server=<span class="number">8.8</span>.<span class="number">4.4</span>
+conf-dir=<span class="regexp">/etc/dnsmasq</span>.d                        <span class="comment"># 详细配置, 为后面分类解析做准备</span>
+
+<span class="comment"># Static IPs                                </span>
+dhcp-host=<span class="number">60</span><span class="symbol">:</span><span class="number">67</span><span class="symbol">:</span><span class="number">20</span><span class="symbol">:c3</span><span class="symbol">:bf</span><span class="symbol">:</span><span class="number">10</span>,<span class="number">10.2</span>.<span class="number">166.73</span>    <span class="comment"># 如需要可编辑固定 IP 列表</span></code></pre>
+<p>配置分类解析配置文件<code>/etc/dnsmasq.d/china.conf</code>, 以使常用域名走国内 DNS 解析, 举例如下, 根据自身情况更改:</p>
+<pre><code># <span class="built_in">server</span>=/domain.name/dns.<span class="built_in">server</span>
+<span class="built_in">server</span>=/<span class="number">115.</span>com/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">123</span>u.com/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">126.</span>com/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">126.</span>net/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">163.</span>com/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">17173.</span>com/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">17</span>cdn.com/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">51.</span>la/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">6</span>rooms.com/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span>
+<span class="built_in">server</span>=/<span class="number">91.</span>com/<span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span></code></pre>
+<p><strong>至此准备工作完成, 可以启动路由器了</strong></p>
+<h3><code>3.4</code>    启动路由器</h3>
+<p><strong>思路</strong></p>
+<p>默认路由为 OpenVPN Server 端私网 IP, chnroute 生成的<a href="http://www.lailai-start.com/CN" target="_blank">3000 条国内路由</a>走国内链路, 以达到分流 / 翻墙的目的.</p>
+<p><strong>步骤:</strong></p>
+<ul>
+<li>启动 Stunnel, 启动 DNSmasq</li>
+<li>开启 linux 内核转发功能</li>
+<li>启动 OpenVPN</li>
+<li>增加 3000 条国内路由 (<a href="http://www.lailai-start.com/CN" target="_blank">点这里下载</a>)</li>
+<li>增加默认路由, 增加下一跳为 OpenVPN Server 端私网 IP</li>
+</ul>
+<p>将步骤编写成脚本, 如下:</p>
+<pre><code><span class="comment">#!/bin/sh</span>
+<span class="comment"># Stunnel up</span>
+<span class="regexp">/usr/bin/</span>stunnel
+<span class="regexp">/usr/sbin/</span>dnsmasq
+
+<span class="comment"># date ntp time</span>
+ntpdate ntp.server.name
+<span class="regexp">/sbin/route add -net 10.0.0.0/</span><span class="number">8</span> gw <span class="number">10.2</span><span class="number">.166</span><span class="number">.1</span>
+<span class="regexp">/sbin/</span>route add -host server.ip.address gw <span class="number">10.2</span><span class="number">.166</span><span class="number">.1</span>
+
+<span class="comment"># iptables NAT</span>
+<span class="regexp">/sbin/i</span>ptables -t nat -A POSTROUTING -o tap0 -j MASQUERADE
+sysctl -w net.ipv4.ip_forward=<span class="number">1</span>
+
+<span class="comment"># start Openvpn</span>
+killall openvpn
+<span class="regexp">/usr/local/sbin/openvpn --daemon --config /etc/openvpn/</span>hk.ovpn
+sleep <span class="number">5</span>
+<span class="comment"># Chnrouters</span>
+<span class="keyword">for</span> i <span class="keyword">in</span> `<span class="javascript">cat /root/bin/CN</span>` ; <span class="keyword">do</span> <span class="regexp">/sbin/</span>route add -net $i gw <span class="number">10.2</span><span class="number">.166</span><span class="number">.1</span> ; done
+<span class="regexp">/sbin/</span>route del <span class="reserved">default</span>
+<span class="regexp">/sbin/</span>route add <span class="reserved">default</span> gw <span class="number">10.2</span><span class="number">.166</span><span class="number">.1</span>
+<span class="regexp">/sbin/</span>route add <span class="reserved">default</span> gw <span class="number">172.31</span><span class="number">.188</span><span class="number">.1</span></code></pre>
+<p>启动脚本, Router 环境搭建完成, 国外网络访问测试:</p>
+<pre><code><span class="comment"># tracert 8.8.8.8</span>
+<span class="title">traceroute</span> to <span class="number">8.8.8.8</span> (<span class="number">8.8.8.8</span>), <span class="number">30</span> hops max, <span class="number">60</span> byte packets
+ <span class="number">1</span>  <span class="number">172.31.188.1</span> (<span class="number">172.31.188.1</span>)  <span class="number">68</span>.<span class="number">963</span> ms  <span class="number">68</span>.<span class="number">913</span> ms  <span class="number">68</span>.<span class="number">914</span> ms
+ <span class="number">2</span>  <span class="number">103.30.4.1</span> (<span class="number">103.30.4.1</span>)  <span class="number">109</span>.<span class="number">650</span> ms  <span class="number">109</span>.<span class="number">651</span> ms  <span class="number">109</span>.<span class="number">645</span> ms
+ <span class="number">3</span>  <span class="number">172.16.0.2</span> (<span class="number">172.16.0.2</span>)  <span class="number">109</span>.<span class="number">410</span> ms  <span class="number">109</span>.<span class="number">454</span> ms  <span class="number">109</span>.<span class="number">448</span> ms
+ <span class="number">4</span>  gi1-<span class="number">26</span>.br02.hkg04.pccwbtn.net (<span class="number">63.218.241.1</span>)  <span class="number">109</span>.<span class="number">384</span> ms  <span class="number">109</span>.<span class="number">384</span> ms  <span class="number">109</span>.<span class="number">465</span> ms
+ <span class="number">5</span>  <span class="number">72.14.196.197</span> (<span class="number">72.14.196.197</span>)  <span class="number">109</span>.<span class="number">415</span> ms  <span class="number">109</span>.<span class="number">381</span> ms  <span class="number">109</span>.<span class="number">344</span> ms
+ <span class="number">6</span>  <span class="number">209.85.241.56</span> (<span class="number">209.85.241.56</span>)  <span class="number">109</span>.<span class="number">368</span> ms <span class="number">209.85.241.58</span> (<span class="number">209.85.241.58</span>)  <span class="number">105</span>.<span class="number">488</span> ms  <span class="number">149</span>.<span class="number">385</span> ms
+ <span class="number">7</span>  <span class="number">216.239.43.17</span> (<span class="number">216.239.43.17</span>)  <span class="number">108</span>.<span class="number">792</span> ms  <span class="number">68</span>.<span class="number">841</span> ms <span class="number">209.85.253.69</span> (<span class="number">209.85.253.69</span>)  <span class="number">69</span>.<span class="number">430</span> ms
+ <span class="number">8</span>  * * *
+ <span class="number">9</span>  google-public-dns-a.google.com (<span class="number">8.8.8.8</span>)  <span class="number">108</span>.<span class="number">102</span> ms  <span class="number">107</span>.<span class="number">936</span> ms  <span class="number">107</span>.<span class="number">819</span> ms</code></pre>
+<p>可以看到直接走 OpenVPN 私网 IP 出去, 国内网络访问测试:</p>
+<pre><code><span class="comment"># traceroute www.baidu.com</span>
+<span class="title">traceroute</span> to www.baidu.com (<span class="number">115.239.210.26</span>), <span class="number">30</span> hops max, <span class="number">60</span> byte packets
+ <span class="number">1</span>  <span class="number">10.2.166.1</span> (<span class="number">10.2.166.1</span>)  <span class="number">2</span>.<span class="number">267</span> ms  <span class="number">2</span>.<span class="number">470</span> ms  <span class="number">2</span>.<span class="number">623</span> ms
+ <span class="number">2</span>  <span class="number">10.2.255.254</span> (<span class="number">10.2.255.254</span>)  <span class="number">2</span>.<span class="number">180</span> ms  <span class="number">2</span>.<span class="number">492</span> ms  <span class="number">2</span>.<span class="number">648</span> ms
+ <span class="number">3</span>  * * *
+ <span class="number">4</span>  * * *
+ <span class="number">5</span>  * * *
+ <span class="number">6</span>  <span class="number">123.125.40.254</span> (<span class="number">123.125.40.254</span>)  <span class="number">2</span>.<span class="number">714</span> ms  <span class="number">2</span>.<span class="number">634</span> ms  <span class="number">2</span>.<span class="number">883</span> ms
+ <span class="number">7</span>  <span class="number">61.49.44.65</span> (<span class="number">61.49.44.65</span>)  <span class="number">1</span>.<span class="number">459</span> ms  <span class="number">1</span>.<span class="number">448</span> ms  <span class="number">1</span>.<span class="number">521</span> ms
+ <span class="number">8</span>  <span class="number">61.148.160.5</span> (<span class="number">61.148.160.5</span>)  <span class="number">1</span>.<span class="number">443</span> ms  <span class="number">1</span>.<span class="number">466</span> ms  <span class="number">1</span>.<span class="number">459</span> ms
+ <span class="number">9</span>  <span class="number">124.65.60.77</span> (<span class="number">124.65.60.77</span>)  <span class="number">3</span>.<span class="number">258</span> ms  <span class="number">5</span>.<span class="number">805</span> ms  <span class="number">5</span>.<span class="number">790</span> ms
+<span class="number">10</span>  <span class="number">123.126.0.85</span> (<span class="number">123.126.0.85</span>)  <span class="number">3</span>.<span class="number">392</span> ms  <span class="number">3</span>.<span class="number">202</span> ms  <span class="number">3</span>.<span class="number">245</span> ms
+<span class="number">11</span>  <span class="number">123.126.0.85</span> (<span class="number">123.126.0.85</span>)  <span class="number">3</span>.<span class="number">214</span> ms  <span class="number">5</span>.<span class="number">487</span> ms  <span class="number">3</span>.<span class="number">913</span> ms
+<span class="number">12</span>  <span class="number">219.158.35.90</span> (<span class="number">219.158.35.90</span>)  <span class="number">71</span>.<span class="number">347</span> ms  <span class="number">71</span>.<span class="number">338</span> ms  <span class="number">71</span>.<span class="number">337</span> ms</code></pre>
+<p>国内链路则直接走原本的网络环境出去.</p>
+<h3><code>3.5</code>    配置监控脚本</h3>
+<p>由于国际出口不一定稳定, OpenVPN 有可能会间歇性断掉, 如果发生此情况, 则会造成默认路由不可达, 从而导致国内网站浏览也会出现问题, 所以配置监控脚本, 一旦国际链路抽风, 则立刻将路由切换至国内.</p>
+<p>脚本内容如下:</p>
+<pre><code>    <span class="shebang">#!/bin/bash</span>
+    ip=<span class="string">"172.31.188.1"</span>
+    i=-1
+    j=-1
+    <span class="keyword">while</span> : ; <span class="keyword">do</span>
+            ping <span class="variable">$ip</span> -c 5 -w 30
+            <span class="keyword">if</span> <span class="test_condition">[ $? -ge <span class="string">"1"</span> ]</span>; <span class="keyword">then</span>
+                route del default gw <span class="variable">$ip</span>
+                j=-1
+                i=$((i+1))
+                txt=`date +%F<span class="string">" "</span>%X`<span class="string">" Ping <span class="variable">$ip</span> timed out."</span>
+                ((<span class="variable">$i</span>%30==0)) &amp;&amp; <span class="keyword">echo</span> <span class="variable">$txt</span> &gt;&gt; /root/bin/logs/checkip.log 
+                ((<span class="variable">$i</span>%30==0)) &amp;&amp; <span class="keyword">echo</span> <span class="variable">$txt</span> | mailx -s <span class="string">"VPN disconnected"</span> admin@domain.com
+            <span class="keyword">else</span>
+                route add default gw <span class="variable">$ip</span>
+                i=-1
+                j=$((j+1))
+                txt=`date +%F<span class="string">" "</span>%X`<span class="string">" Ping <span class="variable">$ip</span> OK."</span>
+                ((<span class="variable">$j</span>%30==0)) &amp;&amp; <span class="keyword">echo</span> <span class="variable">$txt</span> &gt;&gt; /root/bin/logs/checkip.log
+                ((<span class="variable">$j</span>%100000==0)) &amp;&amp; <span class="keyword">echo</span> <span class="variable">$txt</span> | mailx -s <span class="string">"VPN OK."</span> admin@domain.com
+            <span class="keyword">fi</span>
+    sleep 10
+    <span class="keyword">done</span></code></pre>
+<p>后台启动此脚本, 则会每 10 秒监控一次出国链路, 如果断掉, 将会把路由切至国内, 不影响正常上网 ; 如果出国链路长期无法恢复, 则每 5 分钟给管理员发送一封告警邮件.</p>
+<h2><code>4</code>.    Client</h2>
+<p>客户端接入路由器所在交换机后, 配置为自动获取 IP 地址, 即可进行翻墙.</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  
+  <div class="tags">
+    <a href="/tags/gfw/">gfw</a>, <a href="/tags/RaspPi/">RaspPi</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+<section id="comment">
+  <!-- <h1 class="title">Comments</h1> -->
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</div>
+  </div>
+  <div class="widget-wrapper">
+    <aside id="sidebar">
+  
+  
+    
+      
+      
+
+<div class="widget twitter first">
+  <h3 class="title">
+                <a href="http://twitter.com/iarchean">@iarchean</a>'s Tweets
+        </h3>
+  <ul id="tweets"></ul>
+</div>
+
+<script type="text/javascript">
+var twitter_stream = ['iarchean', 3, true];
+var moment_js_path = '/js/moment.min.js';
+</script>
+<script src="/js/twitter.js"></script>
+
+    
+      
+      
+
+<div class="widget recent-posts">
+  <h3 class="title">Recent Posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2013/10/24/OS-X-Mavericks-The-Review/"># Os X Mavericks: the Review</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/22/the-great-gatsby/"># the Great Gatsby</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/22/install-mcrypt-php-extension-on-ubuntu-server/"># Ubuntu Server 下安装 Mcrypt Php Extension</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/21/make-dropbox-public-folder-a-stable-pic-server/"># 用 Dropbox Public Folder 做博客的超稳定图床</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/20/fulfil-with-hexo-theme/"># 搞定 Hexo</a>
+      </li>
+    
+  </ul>
+</div>
+
+    
+      
+      
+
+<div class="widget flickr">
+  <h3 class="title">My Flickr</h3>
+  	<div class="entry">
+				<div class="flickrlist">
+				<script type="text/javascript" src="http://www.flickr.com/badge_code_v2.gne?count=9&display=random&size=s&source=user_set&set=72157636676756714&user=68613860@N04"></script>
+				</div>
+		</div>
+</div>
+
+    
+  
+</aside>
+<div class="clearfix"></div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2013 <a href="/">Archean Zhang</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+   | 
+  Redesign by <a href="http://blog.archean.me/" target="_blank">Archean Zhang</a>
+</div>
+<div class="clearfix"></div>
+
+</footer>
+  <script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+  var disqus_shortname = 'archean';
+
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  }());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

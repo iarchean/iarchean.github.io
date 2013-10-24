@@ -1,0 +1,258 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>为nginx配置https并自签名证书 | Archean's Blog</title>
+  <meta name="author" content="Archean Zhang">
+  
+  <meta name="description" content="Knowing and Doing.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <meta property="og:title" content="为nginx配置https并自签名证书"/>
+  <meta property="og:site_name" content="Archean's Blog"/>
+
+  <link rel="alternate" href="/atom.xml" title="Archean's Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <link rel="icon" type="image" href="/favicon.png">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+  
+</head>
+
+
+<body>
+  <div class="wrapper">
+    <header id="header"><div class="title">
+  <h1><a href="/" class="titlea">Archean's Blog</a></h1>
+  <p><a href="/" class="titlea">Knowing and Doing.</a></p>
+</div>
+
+
+<div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search"speech="”speech”" x-webkit-speech="”x-webkit-speech”" x-webkit-grammar="”builtin:translate”">
+    <input type="hidden" name="q" value="site:blog.archean.me">
+  </form>
+</div>
+
+<nav class="nav">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/about">About</a></li>
+    
+      <li><a href="/atom.xml">Rss</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+<a href="" class="title"></a></header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <time datetime="2013-10-16T12:44:25.000Z"><a href="/2013/10/16/enable-nginx-ssl/">Oct 16 2013</a></time>
+    
+    
+  
+    <h1 class="title">为nginx配置https并自签名证书</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <p>为了使网站可以使用加密的方式访问, 我们有时需要配置 https, 此文章简单介绍一下方法.</p>
+<h2>把证书准备好。</h2>
+<h3>制作 CA 证书：</h3>
+<p>ca.key CA 私钥：</p>
+<pre><code><span class="comment">openssl</span> <span class="comment">genrsa</span> <span class="literal">-</span><span class="comment">des3</span> <span class="literal">-</span><span class="comment">out</span> <span class="comment">ca</span>.<span class="comment">key</span> <span class="comment">2048</code></pre>
+<p>制作解密后的 CA 私钥（一般无此必要）：</p>
+<pre><code>openssl rsa -<span class="keyword">in</span> ca<span class="preprocessor">.key</span> -<span class="keyword">out</span> ca_decrypted<span class="preprocessor">.key</span></code></pre>
+<p>ca.crt CA 根证书（公钥）：</p>
+<pre><code><span class="comment">openssl</span> <span class="comment">req</span> <span class="literal">-</span><span class="comment">new</span> <span class="literal">-</span><span class="comment">x509</span> <span class="literal">-</span><span class="comment">days</span> <span class="comment">7305</span> <span class="literal">-</span><span class="comment">key</span> <span class="comment">ca</span>.<span class="comment">key</span> <span class="literal">-</span><span class="comment">out</span> <span class="comment">ca</span>.<span class="comment">crt</code></pre>
+<p><a id="more"></a></p>
+<h3>制作生成网站的证书并用 CA 签名认证</h3>
+<p>在这里，假设网站域名为<code>blog.archean.me</code></p>
+<p>生成 blog.archean.me 证书私钥：</p>
+<pre><code>openssl genrsa -des3 -<span class="keyword">out</span> blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.pem</span> <span class="number">1024</span></code></pre>
+<p>制作解密后的 blog.archean.me 证书私钥：</p>
+<pre><code>openssl rsa -<span class="keyword">in</span> blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.pem</span> -<span class="keyword">out</span> blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.key</span></code></pre>
+<p>生成签名请求：</p>
+<pre><code>openssl req -new -key blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.pem</span> -<span class="keyword">out</span> blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.csr</span></code></pre>
+<p>在 common name 中填入网站域名，如 blog.archean.me 即可生成改站点的证书，同时也可以使用泛域名如<code>*.archean.me</code>来生成所有二级域名可用的网站证书。</p>
+<p>用 CA 进行签名：</p>
+<pre><code>openssl ca -policy policy_anything -days <span class="number">1460</span> -cert ca<span class="preprocessor">.crt</span> -keyfile ca<span class="preprocessor">.key</span> -<span class="keyword">in</span> blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.csr</span> -<span class="keyword">out</span> blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.crt</span></code></pre>
+<p>其中，policy 参数允许签名的 CA 和网站证书可以有不同的国家、地名等信息，days 参数则是签名时限。<br>如果在执行签名命令时，出现<code>I am unable to access the ../../CA/newcerts directory</code></p>
+<pre><code><span class="comment">修改 /etc/pki/tls/openssl</span>.<span class="comment">cnf 中“dir</span> <span class="comment">=</span> <span class="string">.</span><span class="comment">/CA”</code></pre>
+<p>然后：</p>
+<pre><code><span class="title">mkdir</span> -p <span class="type">CA</span>/newcerts
+<span class="title">touch</span> <span class="type">CA</span>/index.txt
+<span class="title">touch</span> <span class="type">CA</span>/serial
+<span class="title">echo</span> “<span class="number">01</span>″ &gt; <span class="type">CA</span>/serial</code></pre>
+<p>再重新执行签名命令。</p>
+<p>最后，把 ca.crt 的内容粘贴到 blog.archean.me.crt 后面。这个比较重要！因为不这样做，可能会有某些浏览器不支持。<br>好了，现在 https 需要到的网站私钥 blog.archean.me.key 和网站证书 blog.archean.me.crt 都准备完毕。接下来开始配置服务端。</p>
+<h2>配置 nginx</h2>
+<p>新开一个虚拟主机，并在 server{}段中设置：</p>
+<pre><code>listen <span class="number">443</span><span class="comment">;</span>
+ssl on<span class="comment">;</span>
+ssl_certificate /path/to/blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.crt</span><span class="comment">;</span>
+ssl_certificate_key /path/to/blog<span class="preprocessor">.archean</span><span class="preprocessor">.me</span><span class="preprocessor">.key</span><span class="comment">;</span></code></pre>
+<p>其中的路径是刚刚生成的网站证书的路径。</p>
+<p>然后使用一下命令检测配置和重新加载 nginx：</p>
+<p>检测配置：</p>
+<pre><code><span class="title">nginx</span> -t</code></pre>
+<p>重新加载：</p>
+<pre><code>nginx -s re<span class="operator"><span class="keyword">load</span></code></pre>
+<p>在<a href="http://nginx.org/en/docs/http/configuring_https_servers.html" target="_blank">这里</a>是 nginx 官方的关于 https 的文档，可以作为参考。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+  
+  <div class="categories">
+    <a href="/categories/web/">web</a>
+  </div>
+
+      
+  
+  <div class="tags">
+    <a href="/tags/nginx/">nginx</a>, <a href="/tags/https/">https</a>, <a href="/tags/openssl/">openssl</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+<section id="comment">
+  <!-- <h1 class="title">Comments</h1> -->
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</div>
+  </div>
+  <div class="widget-wrapper">
+    <aside id="sidebar">
+  
+  
+    
+      
+      
+
+<div class="widget twitter first">
+  <h3 class="title">
+                <a href="http://twitter.com/iarchean">@iarchean</a>'s Tweets
+        </h3>
+  <ul id="tweets"></ul>
+</div>
+
+<script type="text/javascript">
+var twitter_stream = ['iarchean', 3, true];
+var moment_js_path = '/js/moment.min.js';
+</script>
+<script src="/js/twitter.js"></script>
+
+    
+      
+      
+
+<div class="widget recent-posts">
+  <h3 class="title">Recent Posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2013/10/24/OS-X-Mavericks-The-Review/"># Os X Mavericks: the Review</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/22/the-great-gatsby/"># the Great Gatsby</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/22/install-mcrypt-php-extension-on-ubuntu-server/"># Ubuntu Server 下安装 Mcrypt Php Extension</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/21/make-dropbox-public-folder-a-stable-pic-server/"># 用 Dropbox Public Folder 做博客的超稳定图床</a>
+      </li>
+    
+      <li>
+        <a href="/2013/10/20/fulfil-with-hexo-theme/"># 搞定 Hexo</a>
+      </li>
+    
+  </ul>
+</div>
+
+    
+      
+      
+
+<div class="widget flickr">
+  <h3 class="title">My Flickr</h3>
+  	<div class="entry">
+				<div class="flickrlist">
+				<script type="text/javascript" src="http://www.flickr.com/badge_code_v2.gne?count=9&display=random&size=s&source=user_set&set=72157636676756714&user=68613860@N04"></script>
+				</div>
+		</div>
+</div>
+
+    
+  
+</aside>
+<div class="clearfix"></div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2013 <a href="/">Archean Zhang</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+   | 
+  Redesign by <a href="http://blog.archean.me/" target="_blank">Archean Zhang</a>
+</div>
+<div class="clearfix"></div>
+
+</footer>
+  <script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+  var disqus_shortname = 'archean';
+
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  }());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
