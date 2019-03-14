@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>使用一台Raspberry Pi作为家庭网关, 无障碍翻墙 - Archean&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="Arthor:    Archean Zhang Email:    zephyr422@gmail.com Version:    1.0.1 Date:        2013/8/16  长期被GFW困扰, 我终于忍不住动手了: 把家里的Raspberry Pi和与自由世界的主机建立OpenVPN over Stunnel的链路, 根据大中华3000条路由来匹配, 国外网站自动走OpenV">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用一台Raspberry Pi作为家庭网关, 无障碍翻墙">
+<meta property="og:url" content="https://archeanz.com/2013/10/16/breaking-gfw-with-raspberry-pi/index.html">
+<meta property="og:site_name" content="Archean&#39;s Blog">
+<meta property="og:description" content="Arthor:    Archean Zhang Email:    zephyr422@gmail.com Version:    1.0.1 Date:        2013/8/16  长期被GFW困扰, 我终于忍不住动手了: 把家里的Raspberry Pi和与自由世界的主机建立OpenVPN over Stunnel的链路, 根据大中华3000条路由来匹配, 国外网站自动走OpenV">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://user-images.githubusercontent.com/1519029/39084736-28f4b74a-45ac-11e8-8eee-2b550f692f7d.png">
+<meta property="og:updated_time" content="2019-03-11T14:46:51.333Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="使用一台Raspberry Pi作为家庭网关, 无障碍翻墙">
+<meta name="twitter:description" content="Arthor:    Archean Zhang Email:    zephyr422@gmail.com Version:    1.0.1 Date:        2013/8/16  长期被GFW困扰, 我终于忍不住动手了: 把家里的Raspberry Pi和与自由世界的主机建立OpenVPN over Stunnel的链路, 根据大中华3000条路由来匹配, 国外网站自动走OpenV">
+<meta name="twitter:image" content="https://user-images.githubusercontent.com/1519029/39084736-28f4b74a-45ac-11e8-8eee-2b550f692f7d.png">
+<meta name="twitter:creator" content="@iarchean">
+
+
+
+
+
+<link rel="icon" href="/img/Favicon.png">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/default.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+        <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="/img/Logo.png" alt="使用一台Raspberry Pi作为家庭网关, 无障碍翻墙" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/archives">Archives</a>
+                
+                <a class="navbar-item" href="/categories">Categories</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="Catalogue" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="Search" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2013-10-16T13:57:37.000Z">2013-10-16</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    13 minutes read (About 1913 words)
+                </span>
+                
+                
+                <span class="level-item has-text-grey" id="busuanzi_container_page_pv">
+                    <i class="far fa-eye"></i>
+                    <span id="busuanzi_value_page_pv">0</span> visits
+                </span>
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                使用一台Raspberry Pi作为家庭网关, 无障碍翻墙
+            
+        </h1>
+        <div class="content">
+            <blockquote>
+<p>Arthor:    Archean Zhang</p>
+<p>Email:    <a href="mailto:zephyr422@gmail.com" target="_blank" rel="noopener">zephyr422@gmail.com</a></p>
+<p>Version:    1.0.1</p>
+<p>Date:        2013/8/16</p>
+</blockquote>
+<p>长期被GFW困扰, 我终于忍不住动手了: 把家里的Raspberry Pi和与自由世界的主机建立OpenVPN over Stunnel的链路, 根据大中华3000条路由来匹配, 国外网站自动走OpenVPN出去以实现翻墙.</p>
+<p>以下文章是基于一台Linux服务器(CentOS 6.4)撰写的, 将下面<code>Router</code>的换成Raspberry Pi也一样.<br><a id="more"></a></p>
+<h2 id="1-准备"><a href="#1-准备" class="headerlink" title="1.    准备"></a><code>1</code>.    准备</h2><p>硬件:</p>
+<ul>
+<li>1台位于自由世界的Linux服务器 (Server)</li>
+<li>1台位于本地的Linux服务器 (Router)</li>
+<li>客户端 (Client)</li>
+</ul>
+<p>软件:</p>
+<ul>
+<li>Stunnel</li>
+<li>OpenVPN</li>
+<li>DNSMasq</li>
+</ul>
+<p>拓扑图:<br><img src="https://user-images.githubusercontent.com/1519029/39084736-28f4b74a-45ac-11e8-8eee-2b550f692f7d.png" alt="Topology"></p>
+<h2 id="2-Server端配置"><a href="#2-Server端配置" class="headerlink" title="2.    Server端配置"></a><code>2</code>.    Server端配置</h2><p>安装好Linux系统后(Red hat或CentOS), 同步服务器时间(非常重要):<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># ntpdate time.nist.gov</span><br></pre></td></tr></table></figure></p>
+<h3 id="2-1-OpenVPN"><a href="#2-1-OpenVPN" class="headerlink" title="2.1    OpenVPN"></a><code>2.1</code>    OpenVPN</h3><p>下载安装OpenVPN, 生成服务器端证书, OpenVPN依赖lzo, 需要一同安装:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"># yum install lzo openvpn</span><br></pre></td></tr></table></figure></p>
+<p>服务器端配置文件<code>/etc/openvpn/server.conf</code>, 范例及说明如下:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">local 127.0.0.1 	#监听本地接口</span><br><span class="line">port 4443 			#监听端口</span><br><span class="line">proto tcp 			#协议</span><br><span class="line">dev tap				</span><br><span class="line">ca /etc/openvpn/keys/ca.crt			#证书</span><br><span class="line">cert /etc/openvpn/keys/server.crt	#证书</span><br><span class="line">dh /etc/openvpn/keys/dh1024.pem		#证书</span><br><span class="line">server 172.31.189.0 255.255.255.0	#网段</span><br><span class="line">client-to-client</span><br><span class="line">duplicate-cn</span><br><span class="line">keepalive 10 120</span><br><span class="line">comp-lzo</span><br><span class="line">persist-key</span><br><span class="line">persist-tun</span><br><span class="line">status openvpn-status.log		#状态日志</span><br><span class="line">log-append  openvpn.log			#执行日志</span><br><span class="line">verb 3</span><br></pre></td></tr></table></figure></p>
+<p>启动openvpn:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># openvpn --config /etc/openvpn/server.conf --deamon</span><br></pre></td></tr></table></figure></p>
+<p>观察日志, 如果出现<code>“Initialization Sequence Completed”</code>则代表启动成功.</p>
+<h3 id="2-2-Stunnel"><a href="#2-2-Stunnel" class="headerlink" title="2.2    Stunnel"></a><code>2.2</code>    Stunnel</h3><p>Openvpn的Server端只监控本地接口, 就是为了用Stunnel将流量加密, 在Local端安全的链接, 达到加密, 混淆流量的作用, 以绕开GFW的监控.</p>
+<p>下载安装stunnel<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"># yum install stunnel</span><br></pre></td></tr></table></figure></p>
+<p>安装过程中会生成服务器证书<code>stunnel.pem</code>, 按照提示来即可.</p>
+<p>编辑配置文件<code>/usr/bin/etc/stunnel.conf</code>, 如下所示:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">cert = /usr/local/etc/stunnel/stunnel.pem</span><br><span class="line">CAfile = /usr/local/etc/stunnel/stunnel.pem</span><br><span class="line">socket = l:TCP_NODELAY=1</span><br><span class="line">socket = r:TCP_NODELAY=1</span><br><span class="line"></span><br><span class="line">pid = /tmp/stunnel.pid</span><br><span class="line">verify = 3</span><br><span class="line"></span><br><span class="line">setuid = stunnel</span><br><span class="line">setgid = stunnel</span><br><span class="line"></span><br><span class="line">compression = zlib</span><br><span class="line">delay = no</span><br><span class="line">sslVersion = TLSv1</span><br><span class="line">fips=no</span><br><span class="line"></span><br><span class="line">debug = 7</span><br><span class="line">syslog = no</span><br><span class="line">output = /usr/local/etc/stunnel/stunnel.log</span><br><span class="line"></span><br><span class="line">[s-openvpn]	</span><br><span class="line">accept = 13579				#监听端口</span><br><span class="line">connect = 127.0.0.1:4443	#OpenVPN端口</span><br></pre></td></tr></table></figure></p>
+<p>启动stunnel:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># stunnel</span><br></pre></td></tr></table></figure></p>
+<p>查看OpenVPN和Stunnel是否正确执行, 检查相应端口:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"># netstat -ntwla</span><br><span class="line">Active Internet connections (servers and established)</span><br><span class="line">Proto Recv-Q Send-Q Local Address               Foreign Address             State      </span><br><span class="line">tcp        0      0 0.0.0.0:13579               0.0.0.0:*                   LISTEN    </span><br><span class="line">tcp        0      0 127.0.0.1:4443              127.0.0.1:50223             ESTABLISHED </span><br><span class="line"># lsof -i:4443 -n</span><br><span class="line">COMMAND   PID    USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME</span><br><span class="line">openvpn 25290    root    5u  IPv4 2982393      0t0  TCP *:pharos (LISTEN)</span><br><span class="line">openvpn 25290    root    8u  IPv4 3361561      0t0  TCP 127.0.0.1:pharos-&gt;127.0.0.1:50223 (ESTABLISHED)</span><br><span class="line">stunnel 26801 stunnel   10u  IPv4 3361560      0t0  TCP 127.0.0.1:50223-&gt;127.0.0.1:pharos (ESTABLISHED)</span><br></pre></td></tr></table></figure></p>
+<p><strong>看到端口均已正确监听, 至此Server端配置完成</strong></p>
+<h2 id="3-Router配置"><a href="#3-Router配置" class="headerlink" title="3.    Router配置"></a><code>3</code>.    Router配置</h2><p>安装好Linux系统后(Red hat或CentOS), 同步服务器时间(非常重要):<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"># ntpdate time.nist.gov</span><br></pre></td></tr></table></figure></p>
+<h3 id="3-1-安装Stunnel"><a href="#3-1-安装Stunnel" class="headerlink" title="3.1    安装Stunnel"></a><code>3.1</code>    安装Stunnel</h3><p>Router端需要首先安装Stunnel, 在本地开启加密链路, 透传OpenVPN加密端口4443, 然后OpenVPN才能开始接入:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># yum install stunnel</span><br></pre></td></tr></table></figure>
+<p>将Server端Stunnel证书传过来, 以便验证:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># scp root@server:/usr/local/etc/stunnel.pem root@router:/usr/local/etc/stunnel.pem</span><br></pre></td></tr></table></figure>
+<p>开始进行stunnel配置, 配置文件<code>/usr/local/etc/stunnel.conf</code>:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">pid = /tmp/stunnel.pid</span><br><span class="line">cert = /usr/local/etc/stunnel/stunnel.pem</span><br><span class="line">socket = l:TCP_NODELAY=1</span><br><span class="line">socket = r:TCP_NODELAY=1</span><br><span class="line">verify = 3</span><br><span class="line">CAfile = /usr/local/etc/stunnel/stunnel.pem</span><br><span class="line">client=yes</span><br><span class="line">compression = zlib</span><br><span class="line">ciphers = AES256-SHA</span><br><span class="line">delay = no</span><br><span class="line">failover = prio</span><br><span class="line">sslVersion = TLSv1</span><br><span class="line"></span><br><span class="line">output = /root/bin/logs/stunnel.log</span><br><span class="line">[s-openvpn]</span><br><span class="line">accept = 127.0.0.1:4443</span><br><span class="line">connect = server.ip.address:13579</span><br></pre></td></tr></table></figure>
+<p>启动stunnel:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># stunnel</span><br></pre></td></tr></table></figure>
+<h3 id="3-2-安装OpenVPN"><a href="#3-2-安装OpenVPN" class="headerlink" title="3.2    安装OpenVPN"></a><code>3.2</code>    安装OpenVPN</h3><p>下载安装OpenVPN, OpenVPN依赖lzo, 需要一同安装:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># yum install lzo openvpn</span><br></pre></td></tr></table></figure>
+<p>配置Router端配置文件<code>/etc/openvpn/hk.ovpn</code>:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">dev tap				#设备模式</span><br><span class="line">port 65530			#本地监听端口</span><br><span class="line">proto tcp			#协议</span><br><span class="line">client				#服务模式:client</span><br><span class="line">tls-client			#加密客户端</span><br><span class="line">ns-cert-type server	</span><br><span class="line">remote 127.0.0.1 4443				#Server端口, 由于使用Stunnel加密透传, 所以连接本地端口</span><br><span class="line">ca /etc/openvpn/ca/ca.crt			#证书</span><br><span class="line">key /etc/openvpn/ca/client1.key		#证书</span><br><span class="line">cert /etc/openvpn/ca/client1.crt	#证书</span><br><span class="line">persist-key</span><br><span class="line">persist-tun</span><br><span class="line">#route-method exe</span><br><span class="line">#route-delay 2</span><br><span class="line">comp-lzo</span><br><span class="line">status /etc/openvpn/openvpn-status.log		#状态日志</span><br><span class="line">log-append  /etc/openvpn/ca.log				#执行日志</span><br><span class="line">verb 3</span><br></pre></td></tr></table></figure>
+<p>启动OpenVPN:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># openvpn --daemon --config /etc/openvpn/hk.ovpn</span><br></pre></td></tr></table></figure>
+<p>观察日志, 如果出现<code>“Initialization Sequence Completed”</code>则代表启动成功.</p>
+<p>检查隧道:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"># ip addr</span><br><span class="line">11: tap0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UNKNOWN qlen 100</span><br><span class="line">    link/ether 06:10:50:e5:e5:2c brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 172.31.188.2/24 brd 172.31.188.255 scope global tap0</span><br><span class="line">    inet6 fe80::410:50ff:fee5:e52c/64 scope link </span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line"></span><br><span class="line">       # ping 172.31.188.1</span><br><span class="line">PING 172.31.188.1 (172.31.188.1) 56(84) bytes of data.</span><br><span class="line">64 bytes from 172.31.188.1: icmp_seq=1 ttl=64 time=67.3 ms</span><br><span class="line">64 bytes from 172.31.188.1: icmp_seq=2 ttl=64 time=67.1 ms</span><br><span class="line">^C</span><br><span class="line">--- 172.31.188.1 ping statistics ---</span><br><span class="line">2 packets transmitted, 2 received, 0% packet loss, time 1588ms</span><br><span class="line">rtt min/avg/max/mdev = 67.183/67.284/67.386/0.278 ms</span><br></pre></td></tr></table></figure>
+<p>链路通畅</p>
+<h3 id="3-3-安装DNSmasq"><a href="#3-3-安装DNSmasq" class="headerlink" title="3.3    安装DNSmasq"></a><code>3.3</code>    安装DNSmasq</h3><p>Router若要进行翻墙, 需要使用国外DNS, 而浏览国内网站时, 如果使用国外DNS, 会造成将访问导向国外站点, 造成访问速度变慢, 所以此方案使用DNSmasq解决此问题.</p>
+<p>同时DNSmasq也是一个轻量级DHCP服务器, 非常方便好用.</p>
+<p>安装DNSmasq:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># yum install dnsmasq</span><br></pre></td></tr></table></figure>
+<p>编辑DNSmasq配置文件<code>/etc/dnsmasq.conf</code>, 假设Router本地IP是10.2.166.10, 本地分发网段是10.2.166.0/24, 则配置如下:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"># DHCP config</span><br><span class="line">expand-hosts</span><br><span class="line">domain=archean.me</span><br><span class="line"># DHCP Range</span><br><span class="line">dhcp-range=10.2.166.50,10.2.166.150,12h		#DHCP地址池</span><br><span class="line"># DHCP route</span><br><span class="line">dhcp-option=3,10.2.166.10					#路由</span><br><span class="line"># Apple ntp server</span><br><span class="line">dhcp-option=option:ntp-server,10.3.1.233	#ntp时间服务器</span><br><span class="line"></span><br><span class="line"># DNS server</span><br><span class="line">no-resolv</span><br><span class="line">no-poll</span><br><span class="line">server=8.8.8.8</span><br><span class="line">server=8.8.4.4</span><br><span class="line">conf-dir=/etc/dnsmasq.d</span><br><span class="line"></span><br><span class="line"># AppleTV trailers</span><br><span class="line">address=/trailers.apple.com/180.153.225.136</span><br><span class="line"></span><br><span class="line"># Static IPs</span><br><span class="line"># dhcp-host=xx:xx:xx:xx:xx:xx,10.2.166.121</span><br></pre></td></tr></table></figure>
+<p>配置分类解析配置文件<code>/etc/dnsmasq.d/china.conf</code>, 以使常用域名走国内DNS解析, 举例如下, 根据自身情况更改:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># server=/domain.name/dns.server</span><br><span class="line">server=/115.com/114.114.114.114</span><br><span class="line">server=/123u.com/114.114.114.114</span><br><span class="line">server=/126.com/114.114.114.114</span><br><span class="line">server=/126.net/114.114.114.114</span><br><span class="line">server=/163.com/114.114.114.114</span><br><span class="line">server=/17173.com/114.114.114.114</span><br><span class="line">server=/17cdn.com/114.114.114.114</span><br><span class="line">server=/51.la/114.114.114.114</span><br><span class="line">server=/6rooms.com/114.114.114.114</span><br><span class="line">server=/91.com/114.114.114.114</span><br></pre></td></tr></table></figure>
+<p><strong>至此准备工作完成, 可以启动路由器了</strong></p>
+<h3 id="3-4-启动路由器"><a href="#3-4-启动路由器" class="headerlink" title="3.4    启动路由器"></a><code>3.4</code>    启动路由器</h3><p><strong>思路</strong></p>
+<p>默认路由为OpenVPN Server端私网IP, chnroute生成的<a href="http://www.lailai-start.com/CN" target="_blank" rel="noopener">3000条国内路由</a>走国内链路, 以达到分流/翻墙的目的.</p>
+<p><strong>步骤:</strong></p>
+<ul>
+<li>启动Stunnel, 启动DNSmasq</li>
+<li>开启linux内核转发功能</li>
+<li>启动OpenVPN</li>
+<li>增加3000条国内路由(<a href="http://www.lailai-start.com/CN" target="_blank" rel="noopener">点这里下载</a>)</li>
+<li>增加默认路由, 增加下一跳为OpenVPN Server端私网IP</li>
+</ul>
+<p>将步骤编写成脚本, 如下:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/sh</span><br><span class="line"># Stunnel up</span><br><span class="line">/usr/bin/stunnel</span><br><span class="line">/usr/sbin/dnsmasq</span><br><span class="line"></span><br><span class="line"># date ntp time</span><br><span class="line">ntpdate ntp.server.name</span><br><span class="line">/sbin/route add -net 10.0.0.0/8 gw 10.2.166.1</span><br><span class="line">/sbin/route add -host server.ip.address gw 10.2.166.1</span><br><span class="line"></span><br><span class="line"># iptables NAT</span><br><span class="line">/sbin/iptables -t nat -A POSTROUTING -o tap0 -j MASQUERADE</span><br><span class="line">sysctl -w net.ipv4.ip_forward=1</span><br><span class="line"></span><br><span class="line"># start Openvpn</span><br><span class="line">killall openvpn</span><br><span class="line">/usr/local/sbin/openvpn --daemon --config /etc/openvpn/hk.ovpn</span><br><span class="line">sleep 5</span><br><span class="line"># Chnrouters</span><br><span class="line">for i in `cat /root/bin/CN` ; do /sbin/route add -net $i gw 10.2.166.1 ; done</span><br><span class="line">/sbin/route del default</span><br><span class="line">/sbin/route add default gw 10.2.166.1</span><br><span class="line">/sbin/route add default gw 172.31.188.1</span><br></pre></td></tr></table></figure>
+<p>启动脚本, Router环境搭建完成, 国外网络访问测试:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># tracert 8.8.8.8</span><br><span class="line">traceroute to 8.8.8.8 (8.8.8.8), 30 hops max, 60 byte packets</span><br><span class="line"> 1  172.31.188.1 (172.31.188.1)  68.963 ms  68.913 ms  68.914 ms</span><br><span class="line"> 2  103.30.4.1 (103.30.4.1)  109.650 ms  109.651 ms  109.645 ms</span><br><span class="line"> 3  172.16.0.2 (172.16.0.2)  109.410 ms  109.454 ms  109.448 ms</span><br><span class="line"> 4  gi1-26.br02.hkg04.pccwbtn.net (63.218.241.1)  109.384 ms  109.384 ms  109.465 ms</span><br><span class="line"> 5  72.14.196.197 (72.14.196.197)  109.415 ms  109.381 ms  109.344 ms</span><br><span class="line"> 6  209.85.241.56 (209.85.241.56)  109.368 ms 209.85.241.58 (209.85.241.58)  105.488 ms  149.385 ms</span><br><span class="line"> 7  216.239.43.17 (216.239.43.17)  108.792 ms  68.841 ms 209.85.253.69 (209.85.253.69)  69.430 ms</span><br><span class="line"> 8  * * *</span><br><span class="line"> 9  google-public-dns-a.google.com (8.8.8.8)  108.102 ms  107.936 ms  107.819 ms</span><br></pre></td></tr></table></figure>
+<p>可以看到直接走OpenVPN私网IP出去, 国内网络访问测试:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># traceroute www.baidu.com</span><br><span class="line">traceroute to www.baidu.com (115.239.210.26), 30 hops max, 60 byte packets</span><br><span class="line"> 1  10.2.166.1 (10.2.166.1)  2.267 ms  2.470 ms  2.623 ms</span><br><span class="line"> 2  10.2.255.254 (10.2.255.254)  2.180 ms  2.492 ms  2.648 ms</span><br><span class="line"> 3  * * *</span><br><span class="line"> 4  * * *</span><br><span class="line"> 5  * * *</span><br><span class="line"> 6  123.125.40.254 (123.125.40.254)  2.714 ms  2.634 ms  2.883 ms</span><br><span class="line"> 7  61.49.44.65 (61.49.44.65)  1.459 ms  1.448 ms  1.521 ms</span><br><span class="line"> 8  61.148.160.5 (61.148.160.5)  1.443 ms  1.466 ms  1.459 ms</span><br><span class="line"> 9  124.65.60.77 (124.65.60.77)  3.258 ms  5.805 ms  5.790 ms</span><br><span class="line"> 10  123.126.0.85 (123.126.0.85)  3.392 ms  3.202 ms  3.245 ms</span><br><span class="line">11  123.126.0.85 (123.126.0.85)  3.214 ms  5.487 ms  3.913 ms</span><br><span class="line">12  219.158.35.90 (219.158.35.90)  71.347 ms  71.338 ms  71.337 ms</span><br></pre></td></tr></table></figure>
+<p>国内链路则直接走原本的网络环境出去.</p>
+<h3 id="3-5-配置监控脚本"><a href="#3-5-配置监控脚本" class="headerlink" title="3.5    配置监控脚本"></a><code>3.5</code>    配置监控脚本</h3><p>由于国际出口不一定稳定, OpenVPN有可能会间歇性断掉, 如果发生此情况, 则会造成默认路由不可达, 从而导致国内网站浏览也会出现问题, 所以配置监控脚本, 一旦国际链路抽风, 则立刻将路由切换至国内.</p>
+<p>脚本内容如下:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">       ip=&quot;172.31.188.1&quot;</span><br><span class="line">       i=-1</span><br><span class="line">       j=-1</span><br><span class="line">       while : ; do</span><br><span class="line">               ping $ip -c 5 -w 30</span><br><span class="line">               if [ $? -ge &quot;1&quot; ]; then</span><br><span class="line">               	route del default gw $ip</span><br><span class="line">       			j=-1</span><br><span class="line">                   i=$((i+1))</span><br><span class="line">               	txt=`date +%F&quot; &quot;%X`&quot; Ping $ip timed out.&quot;</span><br><span class="line">               	(($i%30==0)) &amp;&amp; echo $txt &gt;&gt; /root/bin/logs/checkip.log </span><br><span class="line">       			(($i%30==0)) &amp;&amp; echo $txt | mailx -s &quot;VPN disconnected&quot; admin@domain.com</span><br><span class="line">               else</span><br><span class="line">                   route add default gw $ip</span><br><span class="line">                   i=-1</span><br><span class="line">       			j=$((j+1))</span><br><span class="line">       			txt=`date +%F&quot; &quot;%X`&quot; Ping $ip OK.&quot;</span><br><span class="line">       			(($j%30==0)) &amp;&amp; echo $txt &gt;&gt; /root/bin/logs/checkip.log</span><br><span class="line">       			(($j%100000==0)) &amp;&amp; echo $txt | mailx -s &quot;VPN OK.&quot; admin@domain.com</span><br><span class="line">               fi</span><br><span class="line">       sleep 10</span><br><span class="line">       done</span><br></pre></td></tr></table></figure>
+<p>后台启动此脚本, 则会每10秒监控一次出国链路, 如果断掉, 将会把路由切至国内, 不影响正常上网; 如果出国链路长期无法恢复, 则每5分钟给管理员发送一封告警邮件.</p>
+<h2 id="4-Client"><a href="#4-Client" class="headerlink" title="4.    Client"></a><code>4</code>.    Client</h2><p>客户端接入路由器所在交换机后, 配置为自动获取IP地址, 即可进行翻墙.</p>
+
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">Like this article? Support the author with</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>Wechat</span>
+    <div class="qrcode"><img src="https://i.imgur.com/udZHgLs.jpg" alt="Wechat"></div>
+</a>
+
+                
+                <!-- Visit https://www.paypal.com/donate/buttons/ to get your donate button -->
+
+<a class="button is-warning donate" onclick="document.getElementById(&#39;paypal-donate-form&#39;).submit()">
+    <span class="icon is-small">
+        <i class="fab fa-paypal"></i>
+    </span>
+    <span>Paypal</span>
+</a>
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" id="paypal-donate-form">
+    <input type="hidden" name="cmd" value="_donations">
+    <input type="hidden" name="business" value="zephyr422@gmail.com">
+    <input type="hidden" name="currency_code" value="USD">
+</form>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2013/10/20/fulfil-with-hexo-theme/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">搞定 Hexo</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2013/10/16/safe-http-proxy-over-squid-and-stunnel/">
+                <span class="level-item">使用Squid与Stunnel构建安全的http代理服务器</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">Comments</h3>
+        
+<div id="comment-container"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.4.1/dist/gitalk.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.4.1/dist/gitalk.min.js"></script>
+<script>
+    var gitalk = new Gitalk({
+        clientID: 'ae3ddb9624f759342bc8',
+        clientSecret: 'c44d7136dcda480b2959efdd2895b9683192a949',
+        id: '389ef9cc4dbbb20c58e989a58f445964',
+        repo: 'iarchean.github.io',
+        owner: 'iarchean',
+        admin: "iarchean"
+    })
+    gitalk.render('comment-container')
+</script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <figure class="image container is-128x128 has-mb-6">
+                            <img class="is-rounded" src="https://i.imgur.com/UEJ5lER.png" alt="Archean Zhang">
+                        </figure>
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Archean Zhang
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Knowing and Doing
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Beijing, China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        Posts
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        Categories
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        7
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        Tag
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        1
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="http://github.com/iarchean" target="_blank">
+                Follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="http://github.com/iarchean">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Facebook" href="https://www.facebook.com/iarchean">
+                
+                <i class="fab fa-facebook"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Twitter" href="https://twitter.com/iArcHean">
+                
+                <i class="fab fa-twitter"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                Catalogue
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#1-准备">
+        <span class="has-mr-6">1</span>
+        <span>1.    准备</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-Server端配置">
+        <span class="has-mr-6">2</span>
+        <span>2.    Server端配置</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#2-1-OpenVPN">
+        <span class="has-mr-6">2.1</span>
+        <span>2.1    OpenVPN</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-2-Stunnel">
+        <span class="has-mr-6">2.2</span>
+        <span>2.2    Stunnel</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#3-Router配置">
+        <span class="has-mr-6">3</span>
+        <span>3.    Router配置</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#3-1-安装Stunnel">
+        <span class="has-mr-6">3.1</span>
+        <span>3.1    安装Stunnel</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-2-安装OpenVPN">
+        <span class="has-mr-6">3.2</span>
+        <span>3.2    安装OpenVPN</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-3-安装DNSmasq">
+        <span class="has-mr-6">3.3</span>
+        <span>3.3    安装DNSmasq</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-4-启动路由器">
+        <span class="has-mr-6">3.4</span>
+        <span>3.4    启动路由器</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-5-配置监控脚本">
+        <span class="has-mr-6">3.5</span>
+        <span>3.5    配置监控脚本</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#4-Client">
+        <span class="has-mr-6">4</span>
+        <span>4.    Client</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                Categories
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Web/">
+            <span class="level-start">
+                <span class="level-item">Web</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/linux/">
+            <span class="level-start">
+                <span class="level-item">linux</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/linux/iptables/">
+            <span class="level-start">
+                <span class="level-item">iptables</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/linux/web/">
+            <span class="level-start">
+                <span class="level-item">web</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/web/">
+            <span class="level-start">
+                <span class="level-item">web</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            Recent
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/03/03/docker-learn-memo-1/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://i.imgur.com/akzhdvO.jpg" alt="Docker 学习笔记">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-03-03T14:10:06.000Z">2019-03-03</time></div>
+                    <a href="/2019/03/03/docker-learn-memo-1/" class="has-link-black-ter is-size-6">Docker 学习笔记</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Docker/">Docker</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/03/01/test-new-theme/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://i.imgur.com/B89c0of.jpg" alt="试一下 Hexo 新主题：icarus">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-03-01T17:50:08.000Z">2019-03-01</time></div>
+                    <a href="/2019/03/01/test-new-theme/" class="has-link-black-ter is-size-6">试一下 Hexo 新主题：icarus</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/01/28/hexo-auto-deploy-by-travis-ci/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://i.imgur.com/Nae9lut.jpg" alt="Hexo 持续集成">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-01-28T17:56:57.000Z">2019-01-28</time></div>
+                    <a href="/2019/01/28/hexo-auto-deploy-by-travis-ci/" class="has-link-black-ter is-size-6">Hexo 持续集成</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2018/04/22/git-submodule/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="Git Submodule 引发的问题">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-04-22T15:24:18.000Z">2018-04-22</time></div>
+                    <a href="/2018/04/22/git-submodule/" class="has-link-black-ter is-size-6">Git Submodule 引发的问题</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2014/02/07/NAT-on-linux/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://user-images.githubusercontent.com/1519029/39084733-284f61d2-45ac-11e8-997b-63c8ebc190e6.png" alt="用Linux做路由器">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2014-02-07T10:25:39.000Z">2014-02-07</time></div>
+                    <a href="/2014/02/07/NAT-on-linux/" class="has-link-black-ter is-size-6">用Linux做路由器</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/linux/">linux</a> / <a class="has-link-grey -link" href="/categories/linux/iptables/">iptables</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            Recent
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/03/03/docker-learn-memo-1/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://i.imgur.com/akzhdvO.jpg" alt="Docker 学习笔记">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-03-03T14:10:06.000Z">2019-03-03</time></div>
+                    <a href="/2019/03/03/docker-learn-memo-1/" class="has-link-black-ter is-size-6">Docker 学习笔记</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Docker/">Docker</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/03/01/test-new-theme/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://i.imgur.com/B89c0of.jpg" alt="试一下 Hexo 新主题：icarus">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-03-01T17:50:08.000Z">2019-03-01</time></div>
+                    <a href="/2019/03/01/test-new-theme/" class="has-link-black-ter is-size-6">试一下 Hexo 新主题：icarus</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/01/28/hexo-auto-deploy-by-travis-ci/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://i.imgur.com/Nae9lut.jpg" alt="Hexo 持续集成">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-01-28T17:56:57.000Z">2019-01-28</time></div>
+                    <a href="/2019/01/28/hexo-auto-deploy-by-travis-ci/" class="has-link-black-ter is-size-6">Hexo 持续集成</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2018/04/22/git-submodule/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="Git Submodule 引发的问题">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-04-22T15:24:18.000Z">2018-04-22</time></div>
+                    <a href="/2018/04/22/git-submodule/" class="has-link-black-ter is-size-6">Git Submodule 引发的问题</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2014/02/07/NAT-on-linux/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://user-images.githubusercontent.com/1519029/39084733-284f61d2-45ac-11e8-997b-63c8ebc190e6.png" alt="用Linux做路由器">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2014-02-07T10:25:39.000Z">2014-02-07</time></div>
+                    <a href="/2014/02/07/NAT-on-linux/" class="has-link-black-ter is-size-6">用Linux做路由器</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/linux/">linux</a> / <a class="has-link-grey -link" href="/categories/linux/iptables/">iptables</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+    
+    
+</div>
+
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="/img/Logo.png" alt="使用一台Raspberry Pi作为家庭网关, 无障碍翻墙" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2019 Archean Zhang&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                <br>
+                <span id="busuanzi_container_site_uv">
+                Visited by <span id="busuanzi_value_site_uv">0</span> users
+                </span>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("en");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="Back to Top" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="Type something...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: 'Posts',
+                PAGES: 'Pages',
+                CATEGORIES: 'Categories',
+                TAGS: 'Tags',
+                UNTITLED: '(Untitled)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
